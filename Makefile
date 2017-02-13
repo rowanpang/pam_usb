@@ -2,7 +2,14 @@
 DEBUG		:= no
 
 PREFIX		?= /usr
-LIBDIR		?= lib
+SUBARCH 	?=$(shell uname -m | sed -e s/i.86/i386/)
+
+ifeq ($(SUBARCH),x86_64)
+	LIBDIR		?= $(PREFIX)/lib64
+else
+	LIBDIR		?= $(PREFIX)/lib
+endif
+
 
 # compiler/linker options
 CC		:= gcc
@@ -25,7 +32,7 @@ OBJS		:= $(SRCS:.c=.o)
 # pam_usb
 PAM_USB_SRCS	:= src/pam.c
 PAM_USB_OBJS	:= $(PAM_USB_SRCS:.c=.o)
-PAM_USB			:= pam_usb.so
+PAM_USB		:= pam_usb.so
 PAM_USB_LDFLAGS	:= -shared
 PAM_USB_DEST	:= $(DESTDIR)/$(LIBDIR)/security
 
@@ -36,21 +43,23 @@ PAMUSB_CHECK		:= pamusb-check
 
 # Tools
 PAMUSB_CONF		:= pamusb-conf
-PAMUSB_AGENT	:= pamusb-agent
+PAMUSB_AGENT		:= pamusb-agent
 TOOLS_DEST		:= $(DESTDIR)$(PREFIX)/bin
 TOOLS_SRC		:= tools
 
 # Conf
-CONFS			:= doc/pamusb.conf
+CONFS			:= pamusb.conf
 CONFS_DEST		:= $(DESTDIR)/etc
+CONFS_SRC 		:= doc
 
 # Doc
 DOCS		:= doc/CONFIGURATION.md
 DOCS_DEST	:= $(DESTDIR)$(PREFIX)/share/doc/pamusb
 
 # Man
-MANS		:= doc/pamusb-conf.1.gz doc/pamusb-agent.1.gz doc/pamusb-check.1.gz
+MANS		:= pamusb-conf.1.gz,pamusb-agent.1.gz,pamusb-check.1.gz
 MANS_DEST	:= $(DESTDIR)$(PREFIX)/share/man/man1
+MANS_SRC 	:= doc
 
 # Binaries
 RM		:= rm
@@ -79,12 +88,13 @@ install		: all
 		$(MKDIR) -p $(CONFS_DEST) $(DOCS_DEST) $(MANS_DEST) $(TOOLS_DEST) $(PAM_USB_DEST)
 		$(INSTALL) -m755 $(PAM_USB) $(PAM_USB_DEST)
 		$(INSTALL) -m755 $(PAMUSB_CHECK) $(TOOLS_SRC)/$(PAMUSB_CONF) $(TOOLS_SRC)/$(PAMUSB_AGENT) $(TOOLS_DEST)
-		$(INSTALL) -b -m644 $(CONFS) $(CONFS_DEST)
+		$(INSTALL) -b -m644 $(CONFS_SRC)/$(CONFS) $(CONFS_DEST)
 		$(INSTALL) -m644 $(DOCS) $(DOCS_DEST)
-		$(INSTALL) -m644 $(MANS) $(MANS_DEST)
+		$(INSTALL) -m644 $(MANS_SRC)/{$(MANS)} $(MANS_DEST)
 
 deinstall	:
 		$(RM) -f $(PAM_USB_DEST)/$(PAM_USB)
 		$(RM) -f $(TOOLS_DEST)/$(PAMUSB_CHECK) $(TOOLS_DEST)/$(PAMUSB_CONF) $(TOOLS_DEST)/$(PAMUSB_AGENT)
+		$(RM) -f $(CONFS_DEST)/$(CONFS)
 		$(RM) -rf $(DOCS_DEST)
-		$(RM) -f $(MANS_DEST)/pusb_*
+		$(RM) -f $(MANS_DEST)/{$(MANS)}
